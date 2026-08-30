@@ -1,0 +1,15 @@
+{
+  "name": "abtt-site-cloudflare",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 migrations apply abtt-db --local",
+    "db:remote": "wrangler d1 migrations apply abtt-db --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
+  }
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070708">
+  <meta name="description" content="ABTT Equipe — Jiu-Jitsu, atletas, eventos, notícias e afiliadas.">
+  <title>ABTT Equipe | Jiu-Jitsu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav">
+    <a class="brand" href="#inicio"><img src="/assets/abtt-logo-premium.jpg" alt="Logo ABTT"><span><strong>ABTT</strong><small>Equipe de Jiu-Jitsu</small></span></a>
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">☰</button>
+    <nav class="nav-links" id="navLinks" aria-label="Navegação principal">
+      <a href="#sobre">Sobre</a><a href="#atletas">Atletas</a><a href="#noticias">Notícias</a><a href="#eventos">Eventos</a><a href="#afiliadas">Afiliadas</a><a href="#midia">Mídia</a>
+      <a class="admin-link" href="/admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero" id="inicio">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Disciplina • Técnica • Evolução</p>
+        <h1>ABTT <span>Equipe</span></h1>
+        <p class="lead">Jiu-Jitsu com identidade, excelência técnica e uma equipe construída para evoluir dentro e fora do tatame.</p>
+        <div class="hero-actions"><a class="btn" href="#atletas">Conheça a equipe</a><a class="btn btn-ghost" href="#contato">Fale conosco</a></div>
+      </div>
+      <div class="logo-showcase"><img src="/assets/abtt-logo-premium.jpg" alt="ABTT Equipe"></div>
+    </div>
+  </section>
+
+  <section class="section" id="sobre"><div class="container narrow"><p class="eyebrow">Nossa essência</p><h2>Jiu-Jitsu com propósito.</h2><p class="section-copy">A ABTT reúne atletas, professores e afiliadas em torno de uma cultura de respeito, constância e alto nível técnico. Este portal concentra notícias, eventos, atletas e registros da equipe em um ambiente rápido e responsivo.</p></div></section>
+
+  <section class="section section-alt" id="atletas"><div class="container"><div class="section-head"><div><p class="eyebrow">Time</p><h2>Nossos atletas</h2></div><span id="athletesCount" class="count-pill">0 atletas</span></div><div class="athlete-grid" id="athletesGrid"></div></div></section>
+  <section class="section" id="noticias"><div class="container"><div class="section-head"><div><p class="eyebrow">Atualizações</p><h2>Notícias</h2></div></div><div class="cards" id="newsGrid"></div></div></section>
+  <section class="section section-alt" id="eventos"><div class="container"><div class="section-head"><div><p class="eyebrow">Agenda</p><h2>Próximos eventos</h2></div></div><div class="cards" id="eventsGrid"></div></div></section>
+  <section class="section" id="afiliadas"><div class="container"><div class="section-head"><div><p class="eyebrow">Rede ABTT</p><h2>Afiliadas</h2></div></div><div class="affiliate-grid" id="affiliatesGrid"></div></div></section>
+  <section class="section section-alt" id="midia"><div class="container"><div class="section-head"><div><p class="eyebrow">Galeria</p><h2>Mídia</h2></div></div><div class="media-grid" id="mediaGrid"></div></div></section>
+  <section class="cta-section" id="contato"><div class="container"><div class="cta-box"><div><p class="eyebrow">Faça parte</p><h2>Entre em contato com a ABTT</h2><p>Use seus canais oficiais para informações sobre treinos, eventos e afiliação.</p></div><a class="btn" href="#inicio">Voltar ao topo</a></div></div></section>
+</main>
+<footer class="footer"><div class="container footer-grid"><div class="footer-brand"><img src="/assets/abtt-logo-premium.jpg" alt="ABTT"><span>ABTT Equipe</span></div><p>© <span id="year"></span> ABTT. Todos os direitos reservados.</p></div></footer>
+<script src="/app.js" defer></script>
+</body></html>

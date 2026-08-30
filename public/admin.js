@@ -1,0 +1,15 @@
+const $=s=>document.querySelector(s);const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':'&quot;'}[c]));let content={},editing={};
+const labels={athletes:'Atletas',news:'Notícias',events:'Eventos',affiliates:'Afiliadas',media:'Mídia'};
+function message(t,ok=false){const e=$('#adminMsg');e.textContent=t||'';e.className='message'+(ok?' ok':'')}
+async function api(url,opt={}){const r=await fetch(url,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erro na operação.');return d}
+async function session(){const d=await api('/api/admin/session');if(d.authenticated){showPanel();await load()}else $('#loginBox').classList.remove('hidden')}
+function showPanel(){$('#loginBox').classList.add('hidden');$('#panelBox').classList.remove('hidden')}
+$('#loginBtn').onclick=async()=>{try{await api('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({user:$('#loginUser').value.trim(),password:$('#loginPass').value})});showPanel();await load()}catch(e){$('#loginMsg').textContent=e.message}};
+$('#logoutBtn').onclick=async()=>{await api('/api/admin/logout',{method:'POST'});location.reload()};
+async function load(){content=await api('/api/content');renderList()}
+function desc(type,x){if(type==='athletes')return `${x.name}${x.belt?' • '+x.belt:''}`;if(type==='news')return x.title;if(type==='events')return `${x.title} • ${x.event_date}`;if(type==='affiliates')return `${x.name} • ${x.city}/${x.country}`;return x.title}
+function renderList(){let h='';for(const type of Object.keys(labels)){h+=`<h3>${labels[type]}</h3>`+(content[type]?.length?content[type].map(x=>`<div class="admin-row"><div><strong>${esc(desc(type,x))}</strong><br><small>#${x.id}</small></div><div class="mini-actions"><button class="mini-btn" onclick="editItem('${type}',${x.id})">Editar</button><button class="mini-btn" onclick="removeItem('${type}',${x.id})">Excluir</button></div></div>`).join(''):`<p class="upload-tip">Nenhum registro.</p>`)}$('#adminList').innerHTML=h}
+window.removeItem=async(type,id)=>{if(!confirm('Excluir este registro?'))return;try{await api(`/api/admin/${type}/${id}`,{method:'DELETE'});message('Registro excluído.',true);await load()}catch(e){message(e.message)}};
+window.editItem=(type,id)=>{const x=content[type].find(v=>v.id===id),f=$(`#${type}Form`);if(!x||!f)return;editing[type]=id;[...f.elements].forEach(el=>{if(el.name&&el.type!=='file'&&x[el.name]!=null)el.value=x[el.name]});f.scrollIntoView({behavior:'smooth',block:'center'});message(`Editando ${labels[type].toLowerCase()} #${id}.`)};
+document.querySelectorAll('.cancel-edit').forEach(b=>b.onclick=()=>{const f=b.closest('form'),type=f.id.replace('Form','');editing[type]=null;f.reset();message('')});
+for(const type of Object.keys(labels)){const f=$(`#${type}Form`);f.addEventListener('submit',async e=>{e.preventDefault();try{const id=editing[type],method=id?'PUT':'POST';await api(`/api/admin/${type}${id?'/'+id:''}`,{method,body:new FormData(f)});f.reset();editing[type]=null;message('Conteúdo salvo com sucesso.',true);await load()}catch(err){message(err.message)}})}session();

@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "abtt-db",
-      "database_id": "COLE_AQUI_O_DATABASE_ID",
+      "database_id": "e82f293e-4986-4013-bd06-002fa6fde3d4",
       "migrations_dir": "migrations"
     }
   ],

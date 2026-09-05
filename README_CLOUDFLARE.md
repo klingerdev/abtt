@@ -6,7 +6,9 @@
 - Criação automática das tabelas caso a migração ainda não tenha sido aplicada.
 - Exclusão segura: o banco é atualizado antes da remoção do arquivo no R2.
 - Validação do tipo e do tamanho dos arquivos enviados.
-- Tradução do site e do painel para português (Brasil), inglês, espanhol e francês.
+- Tradução completa do site e do painel para português (Brasil), inglês, espanhol, francês e árabe.
+- Tradução automática das postagens, com cache no D1 para acelerar os próximos acessos.
+- Layout RTL automático ao selecionar árabe.
 - Idioma escolhido permanece salvo no navegador.
 
 Esta versão foi reorganizada para Cloudflare Workers + Static Assets + D1 + R2.
@@ -60,6 +62,8 @@ npx wrangler d1 migrations apply abtt-db --remote
 ```
 
 O Worker também verifica e cria as tabelas automaticamente. Mesmo assim, recomenda-se aplicar a migração para manter o ambiente documentado.
+
+As traduções das postagens usam o serviço MyMemory. Na primeira abertura de um idioma, o Worker traduz e grava o resultado na tabela `translation_cache`; depois disso, a tradução é carregada diretamente do D1.
 
 ## 5. Definir a senha do administrador
 O usuário padrão é `admin` e pode ser alterado em `wrangler.jsonc` no campo `ADMIN_USER`.

@@ -22,7 +22,8 @@ const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS media (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,type TEXT NOT NULL CHECK (type IN ('image','video')),file_key TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
   `CREATE INDEX IF NOT EXISTS idx_athletes_name ON athletes(name)`, `CREATE INDEX IF NOT EXISTS idx_news_created ON news(created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date)`, `CREATE INDEX IF NOT EXISTS idx_affiliates_name ON affiliates(name)`,
-  `CREATE INDEX IF NOT EXISTS idx_media_created ON media(created_at DESC)`
+  `CREATE INDEX IF NOT EXISTS idx_media_created ON media(created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS translation_cache (cache_key TEXT PRIMARY KEY,source_text TEXT NOT NULL,target_lang TEXT NOT NULL,translated_text TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')))`
 ];
 let schemaReady = false;
 async function ensureServices(env) {
@@ -72,7 +73,20 @@ function decorate(table, row) {
   if (cfg?.keyField && row[cfg.keyField]) row.url = mediaUrl(row[cfg.keyField]);
   return row;
 }
-async function listContent(env) {
+async function translateText(env, text, lang) {
+  if (!text || lang === "pt-BR") return text;
+  const target = ({ en: "en", es: "es", fr: "fr", ar: "ar" })[lang]; if (!target) return text;
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(`${target}:${text}`)); const key = b64url(new Uint8Array(digest));
+  const cached = await env.DB.prepare("SELECT translated_text FROM translation_cache WHERE cache_key=?").bind(key).first();
+  if (cached?.translated_text) return cached.translated_text;
+  try {
+    const chunks = text.match(/[\s\S]{1,450}(?:\s|$)/g) || [text], translated = [];
+    for (const chunk of chunks) { const endpoint = new URL("https://api.mymemory.translated.net/get"); endpoint.searchParams.set("q",chunk.trim()); endpoint.searchParams.set("langpair",`pt-BR|${target}`); const response=await fetch(endpoint,{headers:{accept:"application/json"}}); if(!response.ok) throw new Error(); const data=await response.json(); translated.push(data?.responseData?.translatedText||chunk.trim()); }
+    const result=translated.join(" "); await env.DB.prepare("INSERT OR REPLACE INTO translation_cache (cache_key,source_text,target_lang,translated_text) VALUES (?,?,?,?)").bind(key,text,target,result).run(); return result;
+  } catch { return text; }
+}
+async function translateContent(env,data,lang){if(!lang||lang==="pt-BR")return data;const fields={athletes:["belt","degree","country"],news:["title","text"],events:["title"],affiliates:["country","city","coach"],media:["title"]};for(const [table,names] of Object.entries(fields))for(const row of data[table])for(const name of names)if(row[name])row[name]=await translateText(env,row[name],lang);return data}
+async function listContent(env, lang = "pt-BR") {
   await ensureServices(env);
   const [a, n, e, af, m] = await Promise.all([
     env.DB.prepare("SELECT * FROM athletes ORDER BY name COLLATE NOCASE").all(),
@@ -81,13 +95,13 @@ async function listContent(env) {
     env.DB.prepare("SELECT * FROM affiliates ORDER BY name COLLATE NOCASE").all(),
     env.DB.prepare("SELECT * FROM media ORDER BY created_at DESC").all()
   ]);
-  return {
+  return translateContent(env, {
     athletes: a.results.map(r => decorate("athletes", r)),
     news: n.results.map(r => decorate("news", r)),
     events: e.results.map(r => decorate("events", r)),
     affiliates: af.results.map(r => decorate("affiliates", r)),
     media: m.results.map(r => decorate("media", r))
-  };
+  }, lang);
 }
 async function parsePayload(request, table, env, existing = null) {
   const cfg = tableConfig[table];
@@ -156,7 +170,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
-      if (url.pathname === "/api/content" && request.method === "GET") return json(await listContent(env), 200, { "cache-control": "public, max-age=30" });
+      if (url.pathname === "/api/content" && request.method === "GET") { const lang=url.searchParams.get("lang")||"pt-BR"; return json(await listContent(env,lang),200,{"cache-control":"public, max-age=30"}); }
       if (url.pathname === "/api/admin/session" && request.method === "GET") return json({ authenticated: await validToken(request, env.ADMIN_PASSWORD) });
       if (url.pathname === "/api/admin/login" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));

@@ -9,13 +9,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/enhancements.css">
 </head>
 <body>
 <header class="site-header">
   <div class="container nav">
     <a class="brand" href="#inicio"><img src="/assets/abtt-logo-premium.jpg" alt="Logo ABTT"><span><strong>ABTT</strong><small>Equipe de Jiu-Jitsu</small></span></a>
-    <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">☰</button>
+    <div class="nav-tools"><label class="language-picker"><span class="sr-only">Idioma</span><select id="languageSelect" aria-label="Idioma"><option value="pt-BR">🇧🇷 Português</option><option value="en">🇺🇸 English</option><option value="es">🇪🇸 Español</option><option value="fr">🇫🇷 Français</option></select></label><button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">☰</button></div>
     <nav class="nav-links" id="navLinks" aria-label="Navegação principal">
       <a href="#sobre">Sobre</a><a href="#atletas">Atletas</a><a href="#noticias">Notícias</a><a href="#eventos">Eventos</a><a href="#afiliadas">Afiliadas</a><a href="#midia">Mídia</a>
       <a class="admin-link" href="/admin.html">Admin</a>
@@ -45,5 +45,5 @@
   <section class="cta-section" id="contato"><div class="container"><div class="cta-box"><div><p class="eyebrow">Faça parte</p><h2>Entre em contato com a ABTT</h2><p>Use seus canais oficiais para informações sobre treinos, eventos e afiliação.</p></div><a class="btn" href="#inicio">Voltar ao topo</a></div></div></section>
 </main>
 <footer class="footer"><div class="container footer-grid"><div class="footer-brand"><img src="/assets/abtt-logo-premium.jpg" alt="ABTT"><span>ABTT Equipe</span></div><p>© <span id="year"></span> ABTT. Todos os direitos reservados.</p></div></footer>
-<script src="/app.js" defer></script>
+<script src="/i18n.js" defer></script><script src="/app.js" defer></script>
 </body></html>

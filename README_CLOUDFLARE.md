@@ -1,4 +1,13 @@
-# ABTT Site — versão Cloudflare
+# ABTT Site — versão Cloudflare corrigida
+
+## Melhorias desta versão
+- Cadastro, edição e exclusão revisados no painel administrativo.
+- Mensagens de erro detalhadas para D1, R2, sessão e conexão.
+- Criação automática das tabelas caso a migração ainda não tenha sido aplicada.
+- Exclusão segura: o banco é atualizado antes da remoção do arquivo no R2.
+- Validação do tipo e do tamanho dos arquivos enviados.
+- Tradução do site e do painel para português (Brasil), inglês, espanhol e francês.
+- Idioma escolhido permanece salvo no navegador.
 
 Esta versão foi reorganizada para Cloudflare Workers + Static Assets + D1 + R2.
 
@@ -49,6 +58,8 @@ Equivalente a:
 ```bash
 npx wrangler d1 migrations apply abtt-db --remote
 ```
+
+O Worker também verifica e cria as tabelas automaticamente. Mesmo assim, recomenda-se aplicar a migração para manter o ambiente documentado.
 
 ## 5. Definir a senha do administrador
 O usuário padrão é `admin` e pode ser alterado em `wrangler.jsonc` no campo `ADMIN_USER`.

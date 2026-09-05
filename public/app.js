@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':'&quot;'}[c]));
-const fmtDate = d => d ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'medium'}).format(new Date(`${d}T12:00:00`)) : '';
+const t = v => window.I18N?.t(v)||v;const fmtDate = d => d ? new Intl.DateTimeFormat(window.I18N?.lang||'pt-BR',{dateStyle:'medium'}).format(new Date(`${d}T12:00:00`)) : '';
 const img = (url, alt, cls='card-media') => url ? `<img class="${cls}" src="${esc(url)}" alt="${esc(alt)}" loading="lazy">` : `<div class="${cls}" style="display:grid;place-items:center;color:#666">ABTT</div>`;
 function empty(text){return `<div class="empty">${esc(text)}</div>`}
 async function load(){
@@ -16,4 +16,4 @@ async function load(){
 }
 $('#menuBtn').addEventListener('click',()=>{const n=$('#navLinks');n.classList.toggle('open');$('#menuBtn').setAttribute('aria-expanded',n.classList.contains('open'))});
 document.querySelectorAll('#navLinks a').forEach(a=>a.addEventListener('click',()=>$('#navLinks').classList.remove('open')));
-$('#year').textContent=new Date().getFullYear();load();
+$('#year').textContent=new Date().getFullYear();document.addEventListener('abtt:languagechange',load);load();

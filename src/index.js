@@ -14,6 +14,22 @@ const tableConfig = {
   media: { fields: ["title", "type"], fileField: "file", keyField: "file_key" }
 };
 
+const schemaStatements = [
+  `CREATE TABLE IF NOT EXISTS athletes (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,age INTEGER,belt TEXT,degree TEXT,country TEXT,photo_key TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+  `CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,text TEXT NOT NULL,image_key TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+  `CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,event_date TEXT NOT NULL,image_key TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+  `CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,country TEXT NOT NULL,city TEXT NOT NULL,coach TEXT,image_key TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+  `CREATE TABLE IF NOT EXISTS media (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,type TEXT NOT NULL CHECK (type IN ('image','video')),file_key TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+  `CREATE INDEX IF NOT EXISTS idx_athletes_name ON athletes(name)`, `CREATE INDEX IF NOT EXISTS idx_news_created ON news(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date)`, `CREATE INDEX IF NOT EXISTS idx_affiliates_name ON affiliates(name)`,
+  `CREATE INDEX IF NOT EXISTS idx_media_created ON media(created_at DESC)`
+];
+let schemaReady = false;
+async function ensureServices(env) {
+  if (!env.DB) throw new Error("Banco D1 não conectado. Configure o binding DB no Cloudflare.");
+  if (!schemaReady) { await env.DB.batch(schemaStatements.map(sql => env.DB.prepare(sql))); schemaReady = true; }
+}
+
 function b64url(bytes) {
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
@@ -57,6 +73,7 @@ function decorate(table, row) {
   return row;
 }
 async function listContent(env) {
+  await ensureServices(env);
   const [a, n, e, af, m] = await Promise.all([
     env.DB.prepare("SELECT * FROM athletes ORDER BY name COLLATE NOCASE").all(),
     env.DB.prepare("SELECT * FROM news ORDER BY created_at DESC").all(),
@@ -85,9 +102,11 @@ async function parsePayload(request, table, env, existing = null) {
   payload[cfg.keyField] = existing?.[cfg.keyField] || null;
   if (file instanceof File && file.size > 0) {
     if (file.size > 25 * 1024 * 1024) throw new Error("Arquivo maior que 25 MB.");
+    if (!env.MEDIA) throw new Error("Armazenamento R2 não conectado. Configure o binding MEDIA e o bucket abtt-media.");
+    const wantedType = table === "media" && payload.type === "video" ? "video/" : "image/";
+    if (!(file.type || "").startsWith(wantedType)) throw new Error(wantedType === "video/" ? "Selecione um vídeo válido." : "Selecione uma imagem válida.");
     const key = `${table}/${safeKey(file.name)}`;
     await env.MEDIA.put(key, file.stream(), { httpMetadata: { contentType: file.type || "application/octet-stream" } });
-    if (existing?.[cfg.keyField]) await env.MEDIA.delete(existing[cfg.keyField]);
     payload[cfg.keyField] = key;
   }
   return payload;
@@ -103,6 +122,7 @@ function validate(table, p) {
 async function adminCrud(request, env, table, id, method) {
   if (!allowedTables.has(table)) return json({ error: "Recurso inválido." }, 404);
   if (!await validToken(request, env.ADMIN_PASSWORD)) return json({ error: "Não autorizado." }, 401);
+  await ensureServices(env);
   const cfg = tableConfig[table];
   if (method === "POST") {
     const p = await parsePayload(request, table, env);
@@ -121,11 +141,12 @@ async function adminCrud(request, env, table, id, method) {
     const cols = [...cfg.fields, cfg.keyField];
     const set = cols.map(c => `${c}=?`).join(",");
     await env.DB.prepare(`UPDATE ${table} SET ${set}, updated_at=datetime('now') WHERE id=?`).bind(...cols.map(c => p[c] ?? null), id).run();
+    if (p[cfg.keyField] !== existing[cfg.keyField] && existing[cfg.keyField] && env.MEDIA) await env.MEDIA.delete(existing[cfg.keyField]).catch(() => {});
     return json({ ok: true });
   }
   if (method === "DELETE") {
-    if (existing[cfg.keyField]) await env.MEDIA.delete(existing[cfg.keyField]);
     await env.DB.prepare(`DELETE FROM ${table} WHERE id=?`).bind(id).run();
+    if (existing[cfg.keyField] && env.MEDIA) await env.MEDIA.delete(existing[cfg.keyField]).catch(() => {});
     return json({ ok: true });
   }
   return json({ error: "Método não permitido." }, 405);
@@ -148,6 +169,7 @@ export default {
       const crud = url.pathname.match(/^\/api\/admin\/(athletes|news|events|affiliates|media)(?:\/(\d+))?$/);
       if (crud) return adminCrud(request, env, crud[1], Number(crud[2] || 0), request.method);
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
+        if (!env.MEDIA) return json({ error: "Armazenamento de mídia indisponível." }, 503);
         const key = decodeURIComponent(url.pathname.slice(7));
         const obj = await env.MEDIA.get(key);
         if (!obj) return new Response("Arquivo não encontrado", { status: 404 });
@@ -155,10 +177,12 @@ export default {
         obj.writeHttpMetadata(headers); headers.set("etag", obj.httpEtag); headers.set("cache-control", "public, max-age=86400");
         return new Response(obj.body, { headers });
       }
+      if (!env.ASSETS) return new Response("Site não configurado.", { status: 503 });
       return env.ASSETS.fetch(request);
     } catch (error) {
       console.error(error);
-      return json({ error: error?.message || "Erro interno." }, 500);
+      const message = error?.message || "Erro interno.";
+      return json({ error: /no such table/i.test(message) ? "As tabelas do banco ainda não foram criadas. Execute as migrações do D1." : message }, 500);
     }
   }
 };
